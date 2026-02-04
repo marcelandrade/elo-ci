@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendário de Disponibilidade - Login</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .container {max-width:480px;width:100%}
+    .logo-container {
+      width:200px;
+      height:90px;
+      margin:0 auto 30px;
+      background:#fff;
+      border-radius:16px;
+      padding:20px 30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 10px 40px rgba(0,59,122,0.3);
+    }
+    .logo-container img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    h1 {
+      font-size:2rem;
+      text-align:center;
+      background:linear-gradient(135deg,#fff,#888);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom:8px;
+    }
+    .subtitle {
+      text-align:center;
+      color:#888;
+      margin-bottom:40px;
+      font-size:0.95rem;
+    }
+    .card {
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:20px;
+      padding:40px;
+    }
+    .info {
+      background:rgba(0,102,204,0.1);
+      border-left:3px solid #0066CC;
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:24px;
+      color:#7dd3fc;
+      font-size:0.9rem;
+    }
+    .form-group {margin-bottom:20px}
+    .form-group label {
+      display:block;
+      margin-bottom:8px;
+      font-weight:600;
+      color:#aaa;
+      font-size:0.9rem;
+    }
+    .form-group input {
+      width:100%;
+      padding:14px 18px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:12px;
+      color:#fff;
+      font-size:1rem;
+      font-family:inherit;
+    }
+    .form-group input:focus {
+      outline:none;
+      border-color:#0066CC;
+      box-shadow:0 0 0 3px rgba(0,102,204,0.2);
+    }
+    .btn {
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:12px;
+      font-size:1rem;
+      font-weight:600;
+      cursor:pointer;
+      background:linear-gradient(135deg,#003B7A,#0066CC);
+      color:#fff;
+      margin-bottom:16px;
+    }
+    .btn:hover {opacity:0.9}
+    .alert {
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:20px;
+      border-left:3px solid;
+    }
+    .alert-error {
+      background:rgba(230,126,34,0.1);
+      border-color:#E67E22;
+      color:#f9a825;
+    }
+    .footer {
+      text-align:center;
+      margin-top:24px;
+      color:#666;
+      font-size:0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo-CI Logo">
+    </div>
+    <h1>Calendário de Disponibilidade</h1>
+    <p class="subtitle">Sistema de gestão de escalas de sábado</p>
+
+    <div class="card">
+      <div class="info">
+        <strong>ℹ️ Login com Senha</strong><br>
+        Digite sua matrícula e senha para acessar o sistema.
+      </div>
+
+      <div id="alertBox"></div>
+
+      <form onsubmit="login(event)">
+        <div class="form-group">
+          <label>Matrícula</label>
+          <input type="text" id="mat" placeholder="Ex: 00001" required autocomplete="username">
+        </div>
+
+        <div class="form-group">
+          <label>Senha</label>
+          <input type="password" id="senha" placeholder="Digite sua senha" required autocomplete="current-password">
+        </div>
+
+        <button type="submit" class="btn">🔐 Entrar</button>
+      </form>
+
+      <div class="footer">
+        <p>© 2025 Grupo Elo • Calendário de Disponibilidade v2.0</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+    };
+
+    if (!DB.get('usuarios').length) {
+      DB.set('usuarios', [
+        {id:1, matricula:'ADMIN', nome:'Administrador', senha:'Elo@2026', perfil:'gestor', deptId:null, deptNome:''},
+        {id:101, matricula:'00001', nome:'João Silva', senha:'Elo@2026', perfil:'colaborador', deptId:1, deptNome:'RH'},
+        {id:102, matricula:'00002', nome:'Maria Santos', senha:'Elo@2026', perfil:'encarregado', deptId:2, deptNome:'TI'}
+      ]);
+    }
+
+    if (!DB.get('departamentos').length) {
+      DB.set('departamentos', [
+        {id:1, nome:'RH'},
+        {id:2, nome:'TI'},
+        {id:3, nome:'Vendas'}
+      ]);
+    }
+
+    function mostrarErro(msg) {
+      document.getElementById('alertBox').innerHTML = `<div class="alert alert-error">${msg}</div>`;
+      setTimeout(() => {document.getElementById('alertBox').innerHTML = '';}, 3000);
+    }
+
+    function login(e) {
+      e.preventDefault();
+      const mat = document.getElementById('mat').value.trim();
+      const senha = document.getElementById('senha').value;
+
+      if (!mat || !senha) {
+        mostrarErro('❌ Preencha todos os campos');
+        return;
+      }
+
+      const usuarios = DB.get('usuarios');
+      const usuario = usuarios.find(u => u.matricula === mat);
+
+      if (!usuario) {
+        mostrarErro('❌ Matrícula não encontrada');
+        return;
+      }
+
+      if (usuario.senha !== senha) {
+        mostrarErro('❌ Senha incorreta');
+        return;
+      }
+
+      localStorage.setItem('sessao', JSON.stringify({
+        tipo: usuario.perfil,
+        usuario: usuario
+      }));
+
+      if (usuario.perfil === 'gestor') {
+        window.location.href = 'painel-gestor.html';
+      } else if (usuario.perfil === 'encarregado') {
+        window.location.href = 'painel-encarregado.html';
+      } else {
+        window.location.href = 'portal-colaborador.html';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alterar Senha - Calendário de Disponibilidade</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      color:#fff;
+      min-height:100vh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .container {max-width:480px;width:100%}
+    .logo-container {
+      width:200px;
+      height:90px;
+      margin:0 auto 30px;
+      background:#fff;
+      border-radius:16px;
+      padding:20px 30px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow:0 10px 40px rgba(0,59,122,0.3);
+    }
+    .logo-container img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    h1 {
+      font-size:2rem;
+      text-align:center;
+      background:linear-gradient(135deg,#fff,#888);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom:8px;
+    }
+    .subtitle {
+      text-align:center;
+      color:#888;
+      margin-bottom:40px;
+      font-size:0.95rem;
+    }
+    .card {
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:20px;
+      padding:40px;
+    }
+    .info {
+      background:rgba(0,102,204,0.1);
+      border-left:3px solid #0066CC;
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:24px;
+      color:#7dd3fc;
+      font-size:0.9rem;
+    }
+    .form-group {margin-bottom:20px}
+    .form-group label {
+      display:block;
+      margin-bottom:8px;
+      font-weight:600;
+      color:#aaa;
+      font-size:0.9rem;
+    }
+    .form-group input {
+      width:100%;
+      padding:14px 18px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      border-radius:12px;
+      color:#fff;
+      font-size:1rem;
+      font-family:inherit;
+    }
+    .form-group input:focus {
+      outline:none;
+      border-color:#0066CC;
+      box-shadow:0 0 0 3px rgba(0,102,204,0.2);
+    }
+    .btn {
+      width:100%;
+      padding:14px;
+      border:none;
+      border-radius:12px;
+      font-size:1rem;
+      font-weight:600;
+      cursor:pointer;
+      background:linear-gradient(135deg,#003B7A,#0066CC);
+      color:#fff;
+      margin-bottom:16px;
+    }
+    .btn:hover {opacity:0.9}
+    .btn-secondary {
+      background:rgba(255,255,255,0.05);
+      border:1px solid rgba(255,255,255,0.1);
+      color:#fff;
+    }
+    .btn-secondary:hover {
+      background:rgba(255,255,255,0.1);
+    }
+    .alert {
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:20px;
+      border-left:3px solid;
+    }
+    .alert-error {
+      background:rgba(230,126,34,0.1);
+      border-color:#E67E22;
+      color:#f9a825;
+    }
+    .alert-success {
+      background:rgba(39,174,96,0.1);
+      border-color:#27AE60;
+      color:#6ee7b7;
+    }
+    .footer {
+      text-align:center;
+      margin-top:24px;
+      color:#666;
+      font-size:0.85rem;
+    }
+    .footer a {
+      color:#0066CC;
+      text-decoration:none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo-container">
+      <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo-CI Logo">
+    </div>
+    <h1>Alterar Senha</h1>
+    <p class="subtitle">Defina uma nova senha para sua conta</p>
+
+    <div class="card">
+      <div class="info">
+        <strong>ℹ️ Requisitos:</strong><br>
+        A senha deve ter no mínimo 6 caracteres.
+      </div>
+
+      <div id="alertBox"></div>
+
+      <form onsubmit="alterarSenha(event)">
+        <div class="form-group">
+          <label>Senha Atual</label>
+          <input type="password" id="senhaAtual" placeholder="Digite sua senha atual" required>
+        </div>
+
+        <div class="form-group">
+          <label>Nova Senha</label>
+          <input type="password" id="novaSenha" placeholder="Digite a nova senha" required>
+        </div>
+
+        <div class="form-group">
+          <label>Confirmar Nova Senha</label>
+          <input type="password" id="confirmarSenha" placeholder="Digite novamente a nova senha" required>
+        </div>
+
+        <button type="submit" class="btn">🔐 Alterar Senha</button>
+        <button type="button" class="btn btn-secondary" onclick="voltar()">← Voltar</button>
+      </form>
+
+      <div class="footer">
+        <p>Esqueceu sua senha? <a href="index.html">Entre em contato com o RH</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const sessao = JSON.parse(localStorage.getItem('sessao') || '{}');
+    if (!sessao.tipo) {
+      alert('❌ Você precisa estar logado para alterar a senha.');
+      window.location.href = 'index.html';
+    }
+
+    const usuarioAtual = sessao.usuario;
+
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+    };
+
+    function mostrarAlerta(msg, tipo) {
+      const alertBox = document.getElementById('alertBox');
+      alertBox.innerHTML = `<div class="alert alert-${tipo}">${msg}</div>`;
+      setTimeout(() => {alertBox.innerHTML = '';}, 3000);
+    }
+
+    function alterarSenha(e) {
+      e.preventDefault();
+      const senhaAtual = document.getElementById('senhaAtual').value;
+      const novaSenha = document.getElementById('novaSenha').value;
+      const confirmarSenha = document.getElementById('confirmarSenha').value;
+
+      if (senhaAtual !== usuarioAtual.senha) {
+        mostrarAlerta('❌ Senha atual incorreta.', 'error');
+        return;
+      }
+
+      if (novaSenha.length < 6) {
+        mostrarAlerta('❌ A nova senha deve ter no mínimo 6 caracteres.', 'error');
+        return;
+      }
+
+      if (novaSenha !== confirmarSenha) {
+        mostrarAlerta('❌ A nova senha e a confirmação não coincidem.', 'error');
+        return;
+      }
+
+      let usuarios = DB.get('usuarios');
+      usuarios = usuarios.map(u => {
+        if (u.id === usuarioAtual.id) {
+          u.senha = novaSenha;
+        }
+        return u;
+      });
+      DB.set('usuarios', usuarios);
+
+      // Atualizar a sessão também
+      usuarioAtual.senha = novaSenha;
+      localStorage.setItem('sessao', JSON.stringify({
+        tipo: sessao.tipo,
+        usuario: usuarioAtual
+      }));
+
+      mostrarAlerta('✅ Senha alterada com sucesso!', 'success');
+      document.querySelector('form').reset();
+      setTimeout(() => {
+        voltar();
+      }, 2000);
+    }
+
+    function voltar() {
+      if (usuarioAtual.perfil === 'gestor') {
+        window.location.href = 'painel-gestor.html';
+      } else if (usuarioAtual.perfil === 'encarregado') {
+        window.location.href = 'painel-encarregado.html';
+      } else {
+        window.location.href = 'portal-colaborador.html';
+      }
+    }
+  </script>
+</body>
+</html>

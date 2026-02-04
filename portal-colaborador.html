@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal Colaborador - Calendário de Disponibilidade</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{
+      font-family:'Inter',sans-serif;
+      background:#0f172a;
+      color:#e5e7eb;
+      min-height:100vh;
+      padding:20px;
+    }
+    .container{max-width:900px;margin:0 auto}
+    .header{
+      background:rgba(15,23,42,0.95);
+      border-radius:20px;
+      padding:24px;
+      border:1px solid rgba(148,163,184,0.3);
+      margin-bottom:24px;
+      display:flex;
+      align-items:center;
+      gap:20px;
+    }
+    .logo-container{
+      width:120px;
+      height:50px;
+      background:#fff;
+      border-radius:12px;
+      padding:8px 15px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .logo-container img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .header-text{flex:1}
+    .header h1{
+      font-size:1.5rem;
+      font-weight:700;
+      color:#e5e7eb;
+      margin-bottom:4px;
+    }
+    .header p{font-size:.9rem;color:#9ca3af}
+    .header a{
+      color:#0066CC;
+      text-decoration:none;
+      font-size:.85rem;
+    }
+    .card{
+      background:rgba(15,23,42,0.96);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:24px;
+      margin-bottom:24px;
+    }
+    .user-header h2{
+      font-size:1.3rem;
+      color:#e5e7eb;
+      margin-bottom:12px;
+    }
+    .user-header p{
+      color:#9ca3af;
+      font-size:.9rem;
+      margin-bottom:6px;
+    }
+    .bonus-card{
+      background:linear-gradient(135deg,rgba(0,102,204,0.1),rgba(0,59,122,0.05));
+      border-color:rgba(0,102,204,0.3);
+    }
+    .bonus-card h3{
+      font-size:1.1rem;
+      color:#7dd3fc;
+      margin-bottom:12px;
+    }
+    .bonus-val{
+      font-size:2.5rem;
+      font-weight:800;
+      background:linear-gradient(135deg,#0066CC,#003B7A);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin:16px 0;
+    }
+    .progress{
+      background:rgba(15,23,42,0.9);
+      border-radius:999px;
+      overflow:hidden;
+      height:28px;
+      margin-top:12px;
+      border:1px solid rgba(0,102,204,0.3);
+    }
+    .progress-inner{
+      height:100%;
+      background:linear-gradient(90deg,#0066CC,#003B7A);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:.85rem;
+      font-weight:600;
+      color:#fff;
+      transition:width .3s;
+    }
+    .section-title{
+      font-size:1.1rem;
+      font-weight:600;
+      margin-bottom:16px;
+      color:#e5e7eb;
+    }
+    .sabado{
+      background:#1e293b;
+      border-radius:14px;
+      padding:16px;
+      margin-bottom:12px;
+      border:1px solid rgba(100,116,139,0.5);
+      transition:all .3s;
+    }
+    .sabado:hover{
+      border-color:#0066CC;
+      transform:translateY(-2px);
+    }
+    .sabado.confirmado{
+      border-color:rgba(39,174,96,0.7);
+      background:rgba(39,174,96,0.1);
+    }
+    .sabado.recusado{
+      border-color:rgba(230,126,34,0.7);
+      background:rgba(230,126,34,0.1);
+    }
+    .sab-head{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:8px;
+    }
+    .sab-data{font-weight:600;font-size:1rem;color:#e5e7eb}
+    .sab-desc{font-size:.85rem;color:#9ca3af;margin-top:4px}
+    .status-badge{
+      font-size:.75rem;
+      padding:4px 12px;
+      border-radius:999px;
+      font-weight:600;
+    }
+    .status-pendente{background:rgba(230,126,34,0.2);color:#E67E22}
+    .status-confirmado{background:rgba(39,174,96,0.2);color:#27AE60}
+    .status-recusado{background:rgba(127,140,141,0.2);color:#7F8C8D}
+    .sab-actions{display:flex;gap:10px;margin-top:12px}
+    .btn-sim,.btn-nao{
+      flex:1;
+      border:none;
+      border-radius:10px;
+      padding:10px 0;
+      font-size:.9rem;
+      font-weight:600;
+      cursor:pointer;
+      transition:all .3s;
+    }
+    .btn-sim{background:#27AE60;color:#fff}
+    .btn-nao{background:#7F8C8D;color:#fff}
+    .btn-sim:hover{background:#229954;transform:translateY(-2px)}
+    .btn-nao:hover{background:#6c7a7b;transform:translateY(-2px)}
+    .btn-secondary{
+      background:rgba(15,23,42,0.9);
+      border:1px solid rgba(148,163,184,0.5);
+      color:#e5e7eb;
+      padding:10px 18px;
+      border-radius:10px;
+      font-size:.85rem;
+      cursor:pointer;
+      transition:all .3s;
+    }
+    .btn-secondary:hover{
+      background:rgba(0,102,204,0.1);
+      border-color:#0066CC;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-container">
+        <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo Logo">
+      </div>
+      <div class="header-text">
+        <h1>Calendário de Disponibilidade</h1>
+        <p>Confirme sua disponibilidade para trabalho aos sábados</p>
+      </div>
+      <a href="index.html">← Voltar ao login</a>
+    </div>
+
+    <div class="card user-header">
+      <h2 id="uNome">Colaborador</h2>
+      <p><strong>Matrícula:</strong> <span id="uMat"></span></p>
+      <p><strong>Departamento:</strong> <span id="uDept"></span></p>
+      <p><strong>E-mail:</strong> <span id="uEmail"></span></p>
+    </div>
+
+    <div class="card bonus-card">
+      <h3>📅 Semanas Trabalhadas no Mês</h3>
+      <p style="color:#9ca3af;font-size:.9rem;">Total de sábados confirmados este mês</p>
+      <div class="bonus-val" id="totalSemanas">0</div>
+      <div class="progress">
+        <div id="progInner" class="progress-inner" style="width:0%">0/4</div>
+      </div>
+      <div style="margin-top:16px;text-align:right">
+        <button class="btn-secondary" onclick="logout()">🚪 Sair</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">📅 Próximas Semanas</div>
+      <div id="listaSemanas"></div>
+    </div>
+  </div>
+
+  <script>
+    const sessao = JSON.parse(localStorage.getItem('sessao') || '{}');
+    if (!sessao.tipo || sessao.tipo !== 'colaborador') {
+      alert('❌ Acesso negado');
+      window.location.href = 'index.html';
+    }
+
+    const colabAtual = sessao.usuario;
+
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+    };
+
+    function logout() {
+      localStorage.removeItem('sessao');
+      window.location.href = 'index.html';
+    }
+
+    function carregar() {
+      document.getElementById('uNome').textContent = colabAtual.nome;
+      document.getElementById('uMat').textContent = colabAtual.matricula;
+      document.getElementById('uDept').textContent = colabAtual.deptNome || '';
+      document.getElementById('uEmail').textContent = colabAtual.email || '-';
+      atualizarSemanas();
+      atualizarContador();
+    }
+
+    function atualizarSemanas() {
+      const semanas = DB.get('semanas').sort((a,b) => a.inicio.localeCompare(b.inicio));
+      const hoje = new Date().toISOString().slice(0,10);
+      const futuras = semanas.filter(s => s.sabado >= hoje);
+      const conf = DB.get('confirmacoes');
+      const el = document.getElementById('listaSemanas');
+
+      if (!futuras.length) {
+        el.innerHTML = '<p style="color:#9ca3af;font-size:.9rem">Nenhuma semana disponível no momento.</p>';
+        return;
+      }
+
+      el.innerHTML = futuras.map(s => {
+        const c = conf.find(x => x.semanaId === s.id && x.colabId === colabAtual.id);
+        const status = c ? c.status : 'pendente';
+        const badgeClass =
+          status === 'confirmado' ? 'status-confirmado' :
+          status === 'recusado' ? 'status-recusado' : 'status-pendente';
+        const label =
+          status === 'confirmado' ? '✅ Confirmado' :
+          status === 'recusado' ? '❌ Não disponível' : '⏳ Pendente';
+        const sabClass =
+          status === 'confirmado' ? 'sabado confirmado' :
+          status === 'recusado' ? 'sabado recusado' : 'sabado';
+
+        const dataSab = new Date(s.sabado+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+
+        return `
+          <div class="${sabClass}">
+            <div class="sab-head">
+              <div>
+                <div class="sab-data">Sábado ${dataSab}</div>
+                <div class="sab-desc">${s.rotulo}</div>
+              </div>
+              <span class="status-badge ${badgeClass}">${label}</span>
+            </div>
+            ${
+              status === 'pendente'
+                ? `<div class="sab-actions">
+                     <button class="btn-sim" onclick="registrar(${s.id},'confirmado')">✅ Estarei presente</button>
+                     <button class="btn-nao" onclick="registrar(${s.id},'recusado')">❌ Não posso</button>
+                   </div>`
+                : `<button style="margin-top:8px;font-size:.8rem;border:none;background:transparent;color:#0066CC;cursor:pointer;padding:4px 0"
+                           onclick="remover(${s.id})">🔄 Alterar resposta</button>`
+            }
+          </div>
+        `;
+      }).join('');
+    }
+
+    function registrar(semanaId, status) {
+      let conf = DB.get('confirmacoes');
+      conf = conf.filter(c => !(c.semanaId === semanaId && c.colabId === colabAtual.id));
+      conf.push({
+        id: Date.now(),
+        semanaId,
+        colabId: colabAtual.id,
+        status,
+        data: new Date().toISOString()
+      });
+      DB.set('confirmacoes', conf);
+
+      alert(status === 'confirmado'
+        ? '✅ Presença confirmada com sucesso!'
+        : '❌ Indisponibilidade registrada.'
+      );
+
+      atualizarSemanas();
+      atualizarContador();
+    }
+
+    function remover(semanaId) {
+      let conf = DB.get('confirmacoes');
+      conf = conf.filter(c => !(c.semanaId === semanaId && c.colabId === colabAtual.id));
+      DB.set('confirmacoes', conf);
+      atualizarSemanas();
+      atualizarContador();
+    }
+
+    function atualizarContador() {
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
+
+      const semanas = DB.get('semanas');
+      const conf = DB.get('confirmacoes');
+
+      const confirmacoesDoMes = conf.filter(c => {
+        if (c.colabId !== colabAtual.id || c.status !== 'confirmado') return false;
+        const semana = semanas.find(s => s.id === c.semanaId);
+        if (!semana) return false;
+        const dataSemana = new Date(semana.inicio);
+        return dataSemana.getMonth() === mesAtual && dataSemana.getFullYear() === anoAtual;
+      });
+
+      const qtd = confirmacoesDoMes.length;
+      document.getElementById('totalSemanas').textContent = qtd;
+
+      const meta = 4;
+      const perc = Math.min(100, (qtd / meta) * 100);
+      const inner = document.getElementById('progInner');
+      inner.style.width = perc + '%';
+      inner.textContent = `${qtd}/${meta}`;
+    }
+
+    window.onload = carregar;
+  </script>
+</body>
+</html>

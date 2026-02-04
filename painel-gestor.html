@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Gestor - Calendário de Disponibilidade</title>
+
+  <!-- jsPDF para gerar PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      color:#e5e7eb;
+    }
+    .topbar {
+      background:rgba(15,23,42,0.95);
+      border-bottom:1px solid rgba(148,163,184,0.2);
+      padding:16px 24px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      z-index:100;
+    }
+    .topbar-left {display:flex;align-items:center;gap:16px}
+    .logo {
+      width:100px;
+      height:40px;
+      background:#fff;
+      border-radius:8px;
+      padding:6px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .logo img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .topbar h1 {font-size:1.25rem;font-weight:700}
+    .user-info {display:flex;align-items:center;gap:12px}
+    .btn-logout {
+      padding:8px 16px;
+      background:rgba(230,126,34,0.1);
+      border:1px solid rgba(230,126,34,0.3);
+      border-radius:8px;
+      color:#E67E22;
+      cursor:pointer;
+      font-size:0.85rem;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .btn-logout:hover {
+      background:rgba(230,126,34,0.2);
+    }
+    .layout {display:flex;min-height:calc(100vh - 68px)}
+    .sidebar {
+      width:260px;
+      background:rgba(15,23,42,0.5);
+      border-right:1px solid rgba(148,163,184,0.1);
+      padding:24px 0;
+    }
+    .nav-item {
+      padding:12px 24px;
+      cursor:pointer;
+      font-size:0.95rem;
+      color:#9ca3af;
+      border-left:3px solid transparent;
+      display:flex;
+      align-items:center;
+      gap:12px;
+    }
+    .nav-item:hover {background:rgba(0,102,204,0.05);color:#e5e7eb}
+    .nav-item.active {
+      background:rgba(0,102,204,0.1);
+      border-left-color:#0066CC;
+      color:#0066CC;
+      font-weight:600;
+    }
+    .main {flex:1;padding:32px;overflow-y:auto}
+    .section {display:none}
+    .section.active {display:block}
+    .stats-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:20px;
+      margin-bottom:32px;
+    }
+    .stat-card {
+      background:rgba(15,23,42,0.8);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:24px;
+      transition:all 0.3s;
+    }
+    .stat-card:hover {
+      transform:translateY(-4px);
+      box-shadow:0 10px 30px rgba(0,102,204,0.3);
+    }
+    .stat-card.destaque {
+      background:linear-gradient(135deg, rgba(39,174,96,0.1), rgba(39,174,96,0.05));
+      border-color:rgba(39,174,96,0.3);
+    }
+    .stat-card.alerta {
+      background:linear-gradient(135deg, rgba(230,126,34,0.1), rgba(230,126,34,0.05));
+      border-color:rgba(230,126,34,0.3);
+    }
+    .stat-label {
+      font-size:0.85rem;
+      color:#9ca3af;
+      margin-bottom:8px;
+      text-transform:uppercase;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .stat-value {
+      font-size:2.5rem;
+      font-weight:800;
+      background:linear-gradient(135deg,#f9fafb,#9ca3af);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom:4px;
+    }
+    .stat-value.destaque {
+      background:linear-gradient(135deg,#27AE60,#229954);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .stat-value.alerta {
+      background:linear-gradient(135deg,#E67E22,#d35400);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+    }
+    .stat-sub {font-size:0.85rem;color:#6b7280;margin-top:4px}
+    .stat-detail {
+      font-size:0.75rem;
+      color:#9ca3af;
+      margin-top:8px;
+      padding-top:8px;
+      border-top:1px solid rgba(148,163,184,0.1);
+    }
+    .card {
+      background:rgba(15,23,42,0.8);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:28px;
+      margin-bottom:24px;
+    }
+    .card h2 {
+      font-size:1.5rem;
+      font-weight:700;
+      margin-bottom:20px;
+      padding-bottom:16px;
+      border-bottom:1px solid rgba(148,163,184,0.1);
+    }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:12px 24px;
+      border:none;
+      border-radius:10px;
+      font-size:0.95rem;
+      font-weight:600;
+      cursor:pointer;
+      margin-right:12px;
+      margin-bottom:12px;
+      transition:all 0.3s;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg,#003B7A,#0066CC);
+      color:#fff;
+    }
+    .btn-primary:hover {
+      opacity:0.9;
+      transform:translateY(-2px);
+    }
+    .btn-success {background:#27AE60;color:#fff}
+    .btn-danger {background:#E67E22;color:#fff}
+    .btn-warning {background:#7F8C8D;color:#fff}
+    .form-group {margin-bottom:20px}
+    .form-group label {
+      display:block;
+      margin-bottom:8px;
+      font-weight:600;
+      font-size:0.9rem;
+      color:#9ca3af;
+    }
+    .form-group input,
+    .form-group select {
+      width:100%;
+      padding:12px 16px;
+      background:rgba(15,23,42,0.9);
+      border:1px solid rgba(148,163,184,0.3);
+      border-radius:10px;
+      color:#f9fafb;
+      font-size:0.95rem;
+    }
+    .form-group input:focus,
+    .form-group select:focus {
+      outline:none;
+      border-color:#0066CC;
+    }
+    .form-group small {
+      display:block;
+      margin-top:6px;
+      color:#6b7280;
+      font-size:0.8rem;
+    }
+    table {width:100%;border-collapse:collapse;margin-top:20px}
+    th,td {padding:14px 12px;text-align:left;border-bottom:1px solid rgba(148,163,184,0.1)}
+    th {
+      background:rgba(15,23,42,0.5);
+      font-weight:600;
+      font-size:0.85rem;
+      color:#9ca3af;
+      text-transform:uppercase;
+    }
+    tr:hover {background:rgba(0,102,204,0.05)}
+    .badge {
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:20px;
+      font-size:0.8rem;
+      font-weight:600;
+    }
+    .badge-success {background:rgba(39,174,96,0.2);color:#27AE60}
+    .badge-warning {background:rgba(230,126,34,0.2);color:#E67E22}
+    .badge-danger {background:rgba(127,140,141,0.2);color:#7F8C8D}
+    .alert {
+      padding:16px 20px;
+      border-radius:12px;
+      margin-bottom:20px;
+      border-left:4px solid;
+    }
+    .alert-info {
+      background:rgba(0,102,204,0.1);
+      border-color:#0066CC;
+      color:#7dd3fc;
+    }
+    .alert-success {
+      background:rgba(39,174,96,0.1);
+      border-color:#27AE60;
+      color:#6ee7b7;
+    }
+    .modal {
+      display:none;
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,0.8);
+      z-index:1000;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+    }
+    .modal.active {display:flex}
+    .modal-content {
+      background:#1a1a1a;
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:20px;
+      padding:32px;
+      max-width:500px;
+      width:100%;
+      max-height:90vh;
+      overflow-y:auto;
+    }
+    .modal-header {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:24px;
+    }
+    .modal-header h3 {font-size:1.5rem;font-weight:700}
+    .modal-close {
+      cursor:pointer;
+      font-size:1.5rem;
+      color:#888;
+    }
+    .modal-close:hover {color:#fff}
+    @media (max-width:768px) {
+      .sidebar {display:none}
+      .main {padding:20px}
+      .stats-grid {grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo Logo">
+      </div>
+      <h1>Painel Gestor</h1>
+    </div>
+    <div class="user-info">
+      <span id="nomeGestor" style="color:#9ca3af"></span>
+      <a href="alterar-senha.html" class="btn-logout" style="background:rgba(0,102,204,0.1);border-color:rgba(0,102,204,0.3);color:#0066CC">🔑 Senha</a>
+      <button class="btn-logout" onclick="logout()">🚪 Sair</button>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="nav-item active" data-section="dashboard">
+        <span>📊</span> Dashboard
+      </div>
+      <div class="nav-item" data-section="config">
+        <span>⚙️</span> Configurações
+      </div>
+      <div class="nav-item" data-section="usuarios">
+        <span>👤</span> Usuários
+      </div>
+      <div class="nav-item" data-section="departamentos">
+        <span>🏢</span> Departamentos
+      </div>
+      <div class="nav-item" data-section="semanas">
+        <span>📅</span> Semanas
+      </div>
+      <div class="nav-item" data-section="confirmacoes">
+        <span>✅</span> Confirmações
+      </div>
+      <div class="nav-item" data-section="marmitas">
+        <span>🍱</span> Marmitas
+      </div>
+      <div class="nav-item" data-section="relatorios">
+        <span>📈</span> Relatórios
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- DASHBOARD -->
+      <section id="dashboard" class="section active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">
+              <span>👥</span> Usuários
+            </div>
+            <div class="stat-value" id="statUsuarios">0</div>
+            <div class="stat-sub">Cadastrados no sistema</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">
+              <span>📅</span> Semana Atual
+            </div>
+            <div class="stat-value" id="statSemana">--</div>
+            <div class="stat-sub">Próximo sábado: <span id="statProxSab">--</span></div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-label">
+              <span>✅</span> Confirmados
+            </div>
+            <div class="stat-value" id="statConf">0</div>
+            <div class="stat-sub">Para o próximo sábado</div>
+          </div>
+
+          <div class="stat-card destaque">
+            <div class="stat-label">
+              <span>💰</span> Estimativa Premiação
+            </div>
+            <div class="stat-value destaque" id="statPremiacao">R$ 0,00</div>
+            <div class="stat-sub">Semana atual (mín. 2 semanas/mês)</div>
+            <div class="stat-detail" id="statPremiacaoDetail">0 colaboradores elegíveis</div>
+          </div>
+
+          <div class="stat-card alerta">
+            <div class="stat-label">
+              <span>🍱</span> Custo Marmitas
+            </div>
+            <div class="stat-value alerta" id="statCustoMarmitas">R$ 0,00</div>
+            <div class="stat-sub">Semana atual</div>
+            <div class="stat-detail" id="statMarmitasDetail">0 marmitas confirmadas</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>🎯 Ações Rápidas</h2>
+          <button class="btn btn-primary" onclick="criarSemanaAtual()">📅 Criar Semana Atual</button>
+          <button class="btn btn-success" onclick="criarDadosTeste()">🔄 Criar Dados de Teste</button>
+        </div>
+
+        <div class="card">
+          <h2>💡 Resumo Financeiro - Semana Atual</h2>
+          <div id="resumoFinanceiro"></div>
+        </div>
+      </section>
+
+      <!-- CONFIGURAÇÕES -->
+      <section id="config" class="section">
+        <div class="card">
+          <h2>⚙️ Configurações</h2>
+
+          <div class="form-group">
+            <label>📧 E-mail para Notificações</label>
+            <input type="email" id="cfgEmail" placeholder="rh@empresa.com.br">
+            <small>Opcional - deixe em branco se não quiser receber notificações</small>
+          </div>
+
+          <div class="form-group">
+            <label>💰 Premiação Semanal (R$)</label>
+            <input type="number" id="cfgPremio" step="0.01" value="135">
+            <small>Valor pago por semana trabalhada</small>
+          </div>
+
+          <div class="form-group">
+            <label>📅 Mínimo de Semanas para Premiação</label>
+            <input type="number" id="cfgMinSemanas" min="1" value="2">
+            <small>Quantidade mínima de semanas confirmadas no mês para receber premiação</small>
+          </div>
+
+          <div class="form-group">
+            <label>🍱 Custo da Marmita (R$)</label>
+            <input type="number" id="cfgCustoMarmita" step="0.01" value="15">
+          </div>
+
+          <button class="btn btn-primary" onclick="salvarConfig()">💾 Salvar</button>
+        </div>
+      </section>
+
+      <!-- USUÁRIOS -->
+      <section id="usuarios" class="section">
+        <div class="card">
+          <h2>👤 Gerenciar Usuários</h2>
+
+          <div class="alert alert-info">
+            <strong>ℹ️ Senha Padrão:</strong> Todos os novos usuários são criados com a senha <strong>Elo@2026</strong>. Eles podem alterá-la após o primeiro login.
+          </div>
+
+          <button class="btn btn-primary" onclick="openModal('modalUsuario')">➕ Novo Usuário</button>
+          <div id="listaUsuarios"></div>
+        </div>
+      </section>
+
+      <!-- DEPARTAMENTOS -->
+      <section id="departamentos" class="section">
+        <div class="card">
+          <h2>🏢 Gerenciar Departamentos</h2>
+          <button class="btn btn-primary" onclick="openModal('modalDept')">➕ Novo Departamento</button>
+          <div id="listaDept"></div>
+        </div>
+      </section>
+
+      <!-- SEMANAS -->
+      <section id="semanas" class="section">
+        <div class="card">
+          <h2>📅 Gerenciar Semanas</h2>
+
+          <div class="alert alert-info">
+            <strong>ℹ️ Criação Automática:</strong> O sistema cria automaticamente as próximas 8 semanas a partir do próximo sábado.
+          </div>
+
+          <button class="btn btn-primary" onclick="criarProximasSemanas()">📅 Gerar Próximas 8 Semanas</button>
+          <button class="btn btn-success" onclick="criarSemanaAtual()">📅 Criar Semana Atual</button>
+          <div id="listaSemanas"></div>
+        </div>
+      </section>
+
+      <!-- CONFIRMAÇÕES -->
+      <section id="confirmacoes" class="section">
+        <div class="card">
+          <h2>✅ Confirmações</h2>
+          <div id="listaConf"></div>
+        </div>
+      </section>
+
+      <!-- MARMITAS -->
+      <section id="marmitas" class="section">
+        <div class="card">
+          <h2>🍱 Relatório de Marmitas</h2>
+          <div id="relMarmitas"></div>
+        </div>
+      </section>
+
+      <!-- RELATÓRIOS -->
+      <section id="relatorios" class="section">
+        <div class="card">
+          <h2>📈 Relatórios em PDF</h2>
+
+          <p style="color:#9ca3af;margin-bottom:20px;">Exporte relatórios completos em PDF para impressão ou compartilhamento.</p>
+
+          <button class="btn btn-primary" onclick="gerarRelatorioPDF('completo')">📄 Relatório Completo</button>
+          <button class="btn btn-success" onclick="gerarRelatorioPDF('confirmacoes')">✅ Apenas Confirmações</button>
+          <button class="btn btn-warning" onclick="gerarRelatorioPDF('marmitas')">🍱 Apenas Marmitas</button>
+
+          <div id="relatorioPreview" style="margin-top:24px;background:rgba(15,23,42,0.5);padding:20px;border-radius:12px;"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- MODAIS -->
+  <div id="modalUsuario" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>➕ Novo Usuário</h3>
+        <span class="modal-close" onclick="closeModal('modalUsuario')">×</span>
+      </div>
+      <form onsubmit="salvarUsuario(event)">
+        <div class="form-group">
+          <label>Matrícula</label>
+          <input type="text" id="userMat" required>
+        </div>
+        <div class="form-group">
+          <label>Nome Completo</label>
+          <input type="text" id="userNome" required>
+        </div>
+        <div class="form-group">
+          <label>E-mail</label>
+          <input type="email" id="userEmail">
+          <small>Opcional</small>
+        </div>
+        <div class="form-group">
+          <label>Perfil</label>
+          <select id="userPerfil" required>
+            <option value="">Selecione...</option>
+            <option value="gestor">👨‍💼 Gestor</option>
+            <option value="encarregado">👷 Encarregado</option>
+            <option value="colaborador">👤 Colaborador</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Departamento</label>
+          <select id="userDept">
+            <option value="">Selecione...</option>
+          </select>
+          <small>Obrigatório para Encarregados e Colaboradores</small>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Salvar</button>
+        <button type="button" class="btn btn-danger" onclick="closeModal('modalUsuario')">❌ Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="modalDept" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>➕ Novo Departamento</h3>
+        <span class="modal-close" onclick="closeModal('modalDept')">×</span>
+      </div>
+      <form onsubmit="salvarDept(event)">
+        <div class="form-group">
+          <label>Nome do Departamento</label>
+          <input type="text" id="deptNome" required>
+        </div>
+        <button type="submit" class="btn btn-primary">💾 Salvar</button>
+        <button type="button" class="btn btn-danger" onclick="closeModal('modalDept')">❌ Cancelar</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const sessao = JSON.parse(localStorage.getItem('sessao') || '{}');
+    if (!sessao.tipo || sessao.tipo !== 'gestor') {
+      alert('❌ Acesso negado - área restrita');
+      window.location.href = 'index.html';
+    }
+
+    const gestorAtual = sessao.usuario;
+    document.getElementById('nomeGestor').textContent = gestorAtual.nome;
+
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+      cfg: () => JSON.parse(localStorage.getItem('cfg') || '{"email":"","premio":135,"minSemanas":2,"custoMarmita":15}')
+    };
+
+    // NAVEGAÇÃO
+    document.querySelectorAll('.nav-item').forEach(item => {
+      item.addEventListener('click', () => {
+        document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        item.classList.add('active');
+        document.getElementById(item.dataset.section).classList.add('active');
+      });
+    });
+
+    function logout() {
+      localStorage.removeItem('sessao');
+      window.location.href = 'index.html';
+    }
+
+    function openModal(id) {
+      document.getElementById(id).classList.add('active');
+      if (id === 'modalUsuario') {
+        const depts = DB.get('departamentos');
+        const sel = document.getElementById('userDept');
+        sel.innerHTML = '<option value="">Selecione...</option>' + 
+          depts.map(d => `<option value="${d.id}">${d.nome}</option>`).join('');
+      }
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('active');
+    }
+
+    // CONFIGURAÇÕES
+    function carregarConfig() {
+      const cfg = DB.cfg();
+      document.getElementById('cfgEmail').value = cfg.email || '';
+      document.getElementById('cfgPremio').value = cfg.premio;
+      document.getElementById('cfgMinSemanas').value = cfg.minSemanas;
+      document.getElementById('cfgCustoMarmita').value = cfg.custoMarmita;
+    }
+
+    function salvarConfig() {
+      const cfg = {
+        email: document.getElementById('cfgEmail').value,
+        premio: parseFloat(document.getElementById('cfgPremio').value),
+        minSemanas: parseInt(document.getElementById('cfgMinSemanas').value),
+        custoMarmita: parseFloat(document.getElementById('cfgCustoMarmita').value)
+      };
+      localStorage.setItem('cfg', JSON.stringify(cfg));
+      alert('✅ Configurações salvas!');
+      atualizarDash();
+    }
+
+    // USUÁRIOS
+    function listarUsuarios() {
+      const usuarios = DB.get('usuarios');
+      const el = document.getElementById('listaUsuarios');
+
+      el.innerHTML = `<table>
+        <thead><tr><th>Matrícula</th><th>Nome</th><th>Perfil</th><th>Departamento</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${usuarios.map(u => `<tr>
+            <td>${u.matricula}</td>
+            <td>${u.nome}</td>
+            <td><span class="badge badge-${u.perfil==='gestor'?'success':u.perfil==='encarregado'?'warning':'primary'}">${u.perfil}</span></td>
+            <td>${u.deptNome||'-'}</td>
+            <td>
+              <button class="btn btn-warning" style="padding:6px 12px;font-size:.8rem" onclick="resetarSenha('${u.matricula}')">🔑 Resetar Senha</button>
+              <button class="btn btn-danger" style="padding:6px 12px;font-size:.8rem" onclick="excluirUsuario(${u.id})">🗑️</button>
+            </td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    function salvarUsuario(e) {
+      e.preventDefault();
+      const mat = document.getElementById('userMat').value.trim();
+      const nome = document.getElementById('userNome').value.trim();
+      const email = document.getElementById('userEmail').value.trim();
+      const perfil = document.getElementById('userPerfil').value;
+      const deptId = parseInt(document.getElementById('userDept').value);
+
+      if (!mat || !nome || !perfil) {
+        alert('❌ Preencha todos os campos obrigatórios');
+        return;
+      }
+
+      const usuarios = DB.get('usuarios');
+      if (usuarios.find(u => u.matricula === mat)) {
+        alert('❌ Matrícula já cadastrada');
+        return;
+      }
+
+      let deptNome = '';
+      if (deptId) {
+        const dept = DB.get('departamentos').find(d => d.id === deptId);
+        deptNome = dept ? dept.nome : '';
+      }
+
+      usuarios.push({
+        id: Date.now(),
+        matricula: mat,
+        nome,
+        email,
+        senha: 'Elo@2026',
+        perfil,
+        deptId: deptId || null,
+        deptNome
+      });
+
+      DB.set('usuarios', usuarios);
+      alert('✅ Usuário criado com sucesso!\nSenha padrão: Elo@2026');
+      closeModal('modalUsuario');
+      document.querySelector('#modalUsuario form').reset();
+      listarUsuarios();
+      atualizarDash();
+    }
+
+    function resetarSenha(mat) {
+      if (!confirm(`Resetar senha do usuário ${mat}?`)) return;
+      let usuarios = DB.get('usuarios');
+      usuarios = usuarios.map(u => {
+        if (u.matricula === mat) u.senha = 'Elo@2026';
+        return u;
+      });
+      DB.set('usuarios', usuarios);
+      alert('✅ Senha resetada para: Elo@2026');
+    }
+
+    function excluirUsuario(id) {
+      if (!confirm('Excluir usuário?')) return;
+      let usuarios = DB.get('usuarios');
+      usuarios = usuarios.filter(u => u.id !== id);
+      DB.set('usuarios', usuarios);
+      listarUsuarios();
+      atualizarDash();
+    }
+
+    // DEPARTAMENTOS
+    function listarDept() {
+      const depts = DB.get('departamentos');
+      const el = document.getElementById('listaDept');
+
+      el.innerHTML = `<table>
+        <thead><tr><th>Nome</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${depts.map(d => `<tr>
+            <td>${d.nome}</td>
+            <td><button class="btn btn-danger" style="padding:6px 12px;font-size:.8rem" onclick="excluirDept(${d.id})">🗑️</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    function salvarDept(e) {
+      e.preventDefault();
+      const nome = document.getElementById('deptNome').value.trim();
+      if (!nome) return;
+
+      const depts = DB.get('departamentos');
+      depts.push({id: Date.now(), nome});
+      DB.set('departamentos', depts);
+
+      closeModal('modalDept');
+      document.querySelector('#modalDept form').reset();
+      listarDept();
+    }
+
+    function excluirDept(id) {
+      if (!confirm('Excluir departamento?')) return;
+      let depts = DB.get('departamentos');
+      depts = depts.filter(d => d.id !== id);
+      DB.set('departamentos', depts);
+      listarDept();
+    }
+
+    // SEMANAS
+    function proximoSabado(dataInicial) {
+      const d = new Date(dataInicial);
+      d.setHours(0, 0, 0, 0); // Zera a hora para evitar problemas de fuso horário
+      const diaDaSemana = d.getDay(); // 0 = Domingo, 6 = Sábado
+      const diasParaSabado = (6 - diaDaSemana + 7) % 7; // Calcula quantos dias faltam para o próximo sábado
+      d.setDate(d.getDate() + diasParaSabado);
+      return d.toISOString().slice(0,10);
+    }
+
+    function criarSemanaAtual() {
+      const hoje = new Date();
+      const sabadoData = new Date(proximoSabado(hoje)); // Garante que é um sábado
+
+      const segunda = new Date(sabadoData);
+      segunda.setDate(sabadoData.getDate() - 5); // Segunda-feira da semana do sábado
+
+      const sexta = new Date(sabadoData);
+      sexta.setDate(sabadoData.getDate() - 1); // Sexta-feira da semana do sábado
+
+      const semanas = DB.get('semanas');
+      if (semanas.find(s => s.sabado === sabadoData.toISOString().slice(0,10))) {
+        alert('❌ Semana atual já existe');
+        return;
+      }
+
+      const rotulo = `${segunda.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${sexta.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`;
+
+      semanas.push({
+        id: Date.now(),
+        rotulo,
+        inicio: segunda.toISOString().slice(0,10),
+        fim: sexta.toISOString().slice(0,10),
+        sabado: sabadoData.toISOString().slice(0,10),
+        criado: new Date().toISOString()
+      });
+
+      DB.set('semanas', semanas);
+      alert('✅ Semana atual criada!');
+      listarSemanas();
+      atualizarDash();
+    }
+
+    function criarProximasSemanas() {
+      const hoje = new Date();
+      let dataBase = new Date(proximoSabado(hoje)); // Começa a partir do próximo sábado
+      const semanas = DB.get('semanas');
+
+      for (let i = 0; i < 8; i++) {
+        const sabadoData = new Date(dataBase);
+
+        const segunda = new Date(sabadoData);
+        segunda.setDate(sabadoData.getDate() - 5);
+
+        const sexta = new Date(sabadoData);
+        sexta.setDate(sabadoData.getDate() - 1);
+
+        if (!semanas.find(s => s.sabado === sabadoData.toISOString().slice(0,10))) {
+          const rotulo = `${segunda.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})} a ${sexta.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`;
+
+          semanas.push({
+            id: Date.now() + i, // Garante IDs únicos
+            rotulo,
+            inicio: segunda.toISOString().slice(0,10),
+            fim: sexta.toISOString().slice(0,10),
+            sabado: sabadoData.toISOString().slice(0,10),
+            criado: new Date().toISOString()
+          });
+        }
+
+        dataBase.setDate(dataBase.getDate() + 7); // Avança para o próximo sábado
+      }
+
+      DB.set('semanas', semanas);
+      alert('✅ Próximas 8 semanas criadas!');
+      listarSemanas();
+      atualizarDash();
+    }
+
+    function listarSemanas() {
+      const semanas = DB.get('semanas').sort((a,b) => a.sabado.localeCompare(b.sabado));
+      const el = document.getElementById('listaSemanas');
+
+      el.innerHTML = `<table>
+        <thead><tr><th>Semana</th><th>Sábado</th><th>Ações</th></tr></thead>
+        <tbody>
+          ${semanas.map(s => {
+            const dataSab = new Date(s.sabado+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+            return `<tr>
+              <td>${s.rotulo}</td>
+              <td>${dataSab}</td>
+              <td><button class="btn btn-danger" style="padding:6px 12px;font-size:.8rem" onclick="excluirSemana(${s.id})">🗑️</button></td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+    }
+
+    function excluirSemana(id) {
+      if (!confirm('Excluir semana?')) return;
+      let semanas = DB.get('semanas');
+      semanas = semanas.filter(s => s.id !== id);
+      DB.set('semanas', semanas);
+      listarSemanas();
+      atualizarDash();
+    }
+
+    // CONFIRMAÇÕES
+    function listarConf() {
+      const semanas = DB.get('semanas').sort((a,b) => a.inicio.localeCompare(b.inicio));
+      const conf = DB.get('confirmacoes');
+      const usuarios = DB.get('usuarios');
+      const el = document.getElementById('listaConf');
+
+      if (!semanas.length) {
+        el.innerHTML = '<p style="color:#9ca3af;">Nenhuma semana cadastrada.</p>';
+        return;
+      }
+
+      el.innerHTML = semanas.map(s => {
+        const cs = conf.filter(c => c.semanaId === s.id);
+        if (!cs.length) {
+          return `<div style="margin-bottom:20px;">
+            <strong>📅 ${s.rotulo}</strong><br>
+            <span style="color:#9ca3af;">Nenhuma confirmação.</span>
+          </div>`;
+        }
+
+        return `<div class="card" style="margin-bottom:16px;">
+          <strong>📅 ${s.rotulo}</strong>
+          <table>
+            <thead><tr><th>Matrícula</th><th>Nome</th><th>Status</th></tr></thead>
+            <tbody>
+              ${cs.map(c => {
+                const user = usuarios.find(u => u.id === c.colabId);
+                const st = c.status === 'confirmado' ? '✅ Confirmado' : '❌ Recusado';
+                const cls = c.status === 'confirmado' ? 'badge-success' : 'badge-danger';
+                return `<tr>
+                  <td>${user ? user.matricula : ''}</td>
+                  <td>${user ? user.nome : ''}</td>
+                  <td><span class="badge ${cls}">${st}</span></td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>`;
+      }).join('');
+    }
+
+    // MARMITAS
+    function atualizarMarmitas() {
+      const semanas = DB.get('semanas').sort((a,b) => a.inicio.localeCompare(b.inicio));
+      const conf = DB.get('confirmacoes');
+      const cfg = DB.cfg();
+      const el = document.getElementById('relMarmitas');
+
+      if (!semanas.length) {
+        el.innerHTML = '<p style="color:#9ca3af;">Nenhuma semana cadastrada.</p>';
+        return;
+      }
+
+      const hoje = new Date().toISOString().slice(0,10);
+      const futuras = semanas.filter(s => s.sabado >= hoje);
+
+      el.innerHTML = futuras.map(s => {
+        const confirmados = conf.filter(c => c.semanaId === s.id && c.status === 'confirmado').length;
+        const custoTotal = confirmados * cfg.custoMarmita;
+
+        return `<div class="card" style="margin-bottom:16px;background:rgba(230,126,34,0.05);border-color:rgba(230,126,34,0.3);">
+          <h3 style="font-size:1.1rem;margin-bottom:12px;color:#E67E22;">📅 ${s.rotulo}</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+            <div>
+              <div style="color:#9ca3af;font-size:0.85rem;">Confirmados</div>
+              <div style="font-size:2rem;font-weight:700;color:#27AE60;">${confirmados}</div>
+            </div>
+            <div>
+              <div style="color:#9ca3af;font-size:0.85rem;">Marmitas</div>
+              <div style="font-size:2rem;font-weight:700;">${confirmados}</div>
+            </div>
+            <div>
+              <div style="color:#9ca3af;font-size:0.85rem;">Custo Total</div>
+              <div style="font-size:2rem;font-weight:700;color:#E67E22;">R$ ${custoTotal.toFixed(2)}</div>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // DASHBOARD
+    function calcularEstimativas() {
+      const usuarios = DB.get('usuarios');
+      const semanas = DB.get('semanas');
+      const conf = DB.get('confirmacoes');
+      const cfg = DB.cfg();
+
+      const hoje = new Date();
+      const mesAtual = hoje.getMonth();
+      const anoAtual = hoje.getFullYear();
+
+      const hojStr = hoje.toISOString().slice(0,10);
+      const semanaAtual = semanas.find(s => s.inicio <= hojStr && s.fim >= hojStr);
+
+      if (!semanaAtual) {
+        return {
+          premiacao: 0,
+          elegíveis: 0,
+          custoMarmitas: 0,
+          marmitas: 0,
+          detalhes: []
+        };
+      }
+
+      const confirmacoesSemanAtual = conf.filter(c => 
+        c.semanaId === semanaAtual.id && 
+        c.status === 'confirmado'
+      );
+
+      const marmitas = confirmacoesSemanAtual.length;
+      const custoMarmitas = marmitas * cfg.custoMarmita;
+
+      const colaboradores = usuarios.filter(u => u.perfil === 'colaborador');
+      let premiacao = 0;
+      let elegíveis = 0;
+      const detalhes = [];
+
+      colaboradores.forEach(colab => {
+        const confirmacoesDoMes = conf.filter(c => {
+          if (c.colabId !== colab.id || c.status !== 'confirmado') return false;
+          const semana = semanas.find(s => s.id === c.semanaId);
+          if (!semana) return false;
+          const dataSemana = new Date(semana.inicio);
+          return dataSemana.getMonth() === mesAtual && dataSemana.getFullYear() === anoAtual;
+        });
+
+        const qtdSemanas = confirmacoesDoMes.length;
+
+        if (qtdSemanas >= cfg.minSemanas) {
+          premiacao += cfg.premio;
+          elegíveis++;
+          detalhes.push({
+            nome: colab.nome,
+            semanas: qtdSemanas,
+            valor: cfg.premio
+          });
+        }
+      });
+
+      return {
+        premiacao,
+        elegíveis,
+        custoMarmitas,
+        marmitas,
+        detalhes
+      };
+    }
+
+    function atualizarDash() {
+      const usuarios = DB.get('usuarios');
+      const semanas = DB.get('semanas');
+      const conf = DB.get('confirmacoes');
+
+      document.getElementById('statUsuarios').textContent = usuarios.length;
+
+      const hoje = new Date().toISOString().slice(0,10);
+      const semanaAtual = semanas.find(s => s.inicio <= hoje && s.fim >= hoje);
+
+      if (semanaAtual) {
+        document.getElementById('statSemana').textContent = semanaAtual.rotulo.split(' a ')[0];
+        const dataSab = new Date(semanaAtual.sabado + 'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+        document.getElementById('statProxSab').textContent = dataSab;
+
+        const confirmados = conf.filter(c => c.semanaId === semanaAtual.id && c.status === 'confirmado').length;
+        document.getElementById('statConf').textContent = confirmados;
+      } else {
+        document.getElementById('statSemana').textContent = '--';
+        document.getElementById('statProxSab').textContent = '--';
+        document.getElementById('statConf').textContent = '0';
+      }
+
+      const estimativas = calcularEstimativas();
+
+      document.getElementById('statPremiacao').textContent = `R$ ${estimativas.premiacao.toFixed(2)}`;
+      document.getElementById('statPremiacaoDetail').textContent = `${estimativas.elegíveis} colaborador(es) elegível(is)`;
+
+      document.getElementById('statCustoMarmitas').textContent = `R$ ${estimativas.custoMarmitas.toFixed(2)}`;
+      document.getElementById('statMarmitasDetail').textContent = `${estimativas.marmitas} marmita(s) confirmada(s)`;
+
+      const totalEstimado = estimativas.premiacao + estimativas.custoMarmitas;
+      document.getElementById('resumoFinanceiro').innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-bottom:20px;">
+          <div style="background:rgba(39,174,96,0.1);padding:20px;border-radius:12px;border-left:4px solid #27AE60;">
+            <div style="color:#9ca3af;font-size:0.85rem;margin-bottom:8px;">💰 Premiação Semana Atual</div>
+            <div style="font-size:2rem;font-weight:700;color:#27AE60;">R$ ${estimativas.premiacao.toFixed(2)}</div>
+            <div style="color:#6b7280;font-size:0.85rem;margin-top:8px;">${estimativas.elegíveis} colaboradores com 2+ semanas no mês</div>
+          </div>
+
+          <div style="background:rgba(230,126,34,0.1);padding:20px;border-radius:12px;border-left:4px solid #E67E22;">
+            <div style="color:#9ca3af;font-size:0.85rem;margin-bottom:8px;">🍱 Custo Marmitas</div>
+            <div style="font-size:2rem;font-weight:700;color:#E67E22;">R$ ${estimativas.custoMarmitas.toFixed(2)}</div>
+            <div style="color:#6b7280;font-size:0.85rem;margin-top:8px;">${estimativas.marmitas} marmitas confirmadas</div>
+          </div>
+
+          <div style="background:rgba(0,102,204,0.1);padding:20px;border-radius:12px;border-left:4px solid #0066CC;">
+            <div style="color:#9ca3af;font-size:0.85rem;margin-bottom:8px;">💵 Custo Total Estimado</div>
+            <div style="font-size:2rem;font-weight:700;color:#0066CC;">R$ ${totalEstimado.toFixed(2)}</div>
+            <div style="color:#6b7280;font-size:0.85rem;margin-top:8px;">Premiação + Marmitas</div>
+          </div>
+        </div>
+
+        ${estimativas.detalhes.length > 0 ? `
+          <div style="background:rgba(15,23,42,0.5);padding:16px;border-radius:12px;">
+            <h3 style="color:#e5e7eb;font-size:1rem;margin-bottom:12px;">📋 Colaboradores Elegíveis para Premiação</h3>
+            <table style="font-size:0.9rem;">
+              <thead><tr><th>Nome</th><th>Semanas no Mês</th><th>Valor</th></tr></thead>
+              <tbody>
+                ${estimativas.detalhes.map(d => `<tr>
+                  <td>${d.nome}</td>
+                  <td><span class="badge badge-success">${d.semanas} semana(s)</span></td>
+                  <td style="font-weight:600;color:#27AE60;">R$ ${d.valor.toFixed(2)}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
+          </div>
+        ` : '<p style="color:#9ca3af;">Nenhum colaborador elegível para premiação nesta semana (mínimo 2 semanas no mês).</p>'}
+      `;
+    }
+
+    // RELATÓRIOS PDF
+    function gerarRelatorioPDF(tipo) {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const semanas = DB.get('semanas').sort((a,b) => a.inicio.localeCompare(b.inicio));
+      const conf = DB.get('confirmacoes');
+      const usuarios = DB.get('usuarios');
+      const cfg = DB.cfg();
+      const hoje = new Date().toLocaleDateString('pt-BR');
+
+      doc.setFontSize(18);
+      doc.setFont(undefined, 'bold');
+      doc.text('Calendário de Disponibilidade', 105, 20, { align: 'center' });
+
+      doc.setFontSize(12);
+      doc.setFont(undefined, 'normal');
+      doc.text(`Relatório gerado em: ${hoje}`, 105, 28, { align: 'center' });
+
+      let yPos = 40;
+
+      if (tipo === 'completo' || tipo === 'confirmacoes') {
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('Confirmações por Semana', 14, yPos);
+        yPos += 10;
+
+        const tableData = [];
+        semanas.forEach(s => {
+          const cs = conf.filter(c => c.semanaId === s.id);
+          if (cs.length) {
+            cs.forEach(c => {
+              const user = usuarios.find(u => u.id === c.colabId);
+              tableData.push([
+                s.rotulo,
+                user ? user.matricula : '',
+                user ? user.nome : '',
+                c.status === 'confirmado' ? 'Confirmado' : 'Recusado'
+              ]);
+            });
+          }
+        });
+
+        doc.autoTable({
+          startY: yPos,
+          head: [['Semana', 'Matrícula', 'Nome', 'Status']],
+          body: tableData,
+          theme: 'grid',
+          headStyles: { fillColor: [0, 102, 204] },
+          styles: { fontSize: 9 }
+        });
+
+        yPos = doc.lastAutoTable.finalY + 15;
+      }
+
+      if (tipo === 'completo' || tipo === 'marmitas') {
+        doc.setFontSize(14);
+        doc.setFont(undefined, 'bold');
+        doc.text('Relatório de Marmitas', 14, yPos);
+        yPos += 10;
+
+        const marmitasData = [];
+        const futuros = semanas.filter(s => s.sabado >= new Date().toISOString().slice(0,10));
+
+        futuros.forEach(s => {
+          const confirmados = conf.filter(c => c.semanaId === s.id && c.status === 'confirmado').length;
+          const custo = confirmados * cfg.custoMarmita;
+          marmitasData.push([
+            s.rotulo,
+            confirmados.toString(),
+            confirmados.toString(),
+            `R$ ${custo.toFixed(2)}`
+          ]);
+        });
+
+        doc.autoTable({
+          startY: yPos,
+          head: [['Semana', 'Confirmados', 'Marmitas', 'Custo Total']],
+          body: marmitasData,
+          theme: 'grid',
+          headStyles: { fillColor: [230, 126, 34] },
+          styles: { fontSize: 9 }
+        });
+      }
+
+      const nomeArquivo = `relatorio_${tipo}_${new Date().toISOString().slice(0,10)}.pdf`;
+      doc.save(nomeArquivo);
+      alert(`✅ Relatório "${tipo}" gerado!`);
+    }
+
+    // INICIALIZAÇÃO
+    function atualizar() {
+      listarUsuarios();
+      listarDept();
+      listarSemanas();
+      listarConf();
+      carregarConfig();
+      atualizarDash();
+      atualizarMarmitas();
+    }
+
+    function criarDadosTeste() {
+      if (!confirm('Criar dados de teste?')) return;
+
+      DB.set('departamentos', [
+        {id:1, nome:'RH'},
+        {id:2, nome:'TI'},
+        {id:3, nome:'Vendas'}
+      ]);
+
+      DB.set('usuarios', [
+        {id:1, matricula:'ADMIN', nome:'Administrador', senha:'Elo@2026', perfil:'gestor', deptId:null, deptNome:''},
+        {id:101, matricula:'00001', nome:'João Silva', senha:'Elo@2026', perfil:'colaborador', deptId:1, deptNome:'RH'},
+        {id:102, matricula:'00002', nome:'Maria Santos', senha:'Elo@2026', perfil:'encarregado', deptId:2, deptNome:'TI'},
+        {id:103, matricula:'00003', nome:'Pedro Costa', senha:'Elo@2026', perfil:'colaborador', deptId:3, deptNome:'Vendas'}
+      ]);
+
+      DB.set('semanas', []);
+      DB.set('confirmacoes', []);
+
+      criarProximasSemanas();
+      alert('✅ Dados de teste criados!\n\nSenha padrão: Elo@2026');
+      atualizar();
+    }
+
+    window.onload = atualizar;
+  </script>
+</body>
+</html>

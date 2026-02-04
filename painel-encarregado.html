@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel Encarregado - Calendário de Disponibilidade</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      color:#e5e7eb;
+    }
+    .topbar {
+      background:rgba(15,23,42,0.95);
+      border-bottom:1px solid rgba(148,163,184,0.2);
+      padding:16px 24px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      position:sticky;
+      top:0;
+      z-index:100;
+    }
+    .topbar-left {display:flex;align-items:center;gap:16px}
+    .logo {
+      width:100px;
+      height:40px;
+      background:#fff;
+      border-radius:8px;
+      padding:6px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .logo img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .topbar h1 {font-size:1.25rem;font-weight:700}
+    .user-info {display:flex;align-items:center;gap:12px}
+    .btn-logout {
+      padding:8px 16px;
+      background:rgba(230,126,34,0.1);
+      border:1px solid rgba(230,126,34,0.3);
+      border-radius:8px;
+      color:#E67E22;
+      cursor:pointer;
+      font-size:0.85rem;
+      text-decoration:none;
+      display:inline-block;
+    }
+    .btn-logout:hover {
+      background:rgba(230,126,34,0.2);
+    }
+    .main {flex:1;padding:32px;overflow-y:auto}
+    .stats-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+      gap:20px;
+      margin-bottom:32px;
+    }
+    .stat-card {
+      background:rgba(15,23,42,0.8);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:24px;
+      transition:all 0.3s;
+    }
+    .stat-card:hover {
+      transform:translateY(-4px);
+      box-shadow:0 10px 30px rgba(0,102,204,0.3);
+    }
+    .stat-label {
+      font-size:0.85rem;
+      color:#9ca3af;
+      margin-bottom:8px;
+      text-transform:uppercase;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .stat-value {
+      font-size:2.5rem;
+      font-weight:800;
+      background:linear-gradient(135deg,#f9fafb,#9ca3af);
+      -webkit-background-clip:text;
+      -webkit-text-fill-color:transparent;
+      margin-bottom:4px;
+    }
+    .card {
+      background:rgba(15,23,42,0.8);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:28px;
+      margin-bottom:24px;
+    }
+    .card h2 {
+      font-size:1.5rem;
+      font-weight:700;
+      margin-bottom:20px;
+      padding-bottom:16px;
+      border-bottom:1px solid rgba(148,163,184,0.1);
+    }
+    .info-box {
+      background:rgba(0,102,204,0.1);
+      border-left:3px solid #0066CC;
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:24px;
+      color:#7dd3fc;
+      font-size:0.9rem;
+    }
+    .filtro {margin-bottom:20px}
+    .filtro select {
+      width:100%;
+      padding:12px 16px;
+      background:rgba(15,23,42,0.9);
+      border:1px solid rgba(148,163,184,0.3);
+      border-radius:10px;
+      color:#f9fafb;
+      font-size:0.95rem;
+    }
+    .filtro select:focus {
+      outline:none;
+      border-color:#0066CC;
+    }
+    table {width:100%;border-collapse:collapse;margin-top:20px}
+    th,td {padding:14px 12px;text-align:left;border-bottom:1px solid rgba(148,163,184,0.1)}
+    th {
+      background:rgba(15,23,42,0.5);
+      font-weight:600;
+      font-size:0.85rem;
+      color:#9ca3af;
+      text-transform:uppercase;
+    }
+    tr:hover {background:rgba(0,102,204,0.05)}
+    .badge {
+      display:inline-block;
+      padding:4px 12px;
+      border-radius:20px;
+      font-size:0.8rem;
+      font-weight:600;
+    }
+    .badge-success {background:rgba(39,174,96,0.2);color:#27AE60}
+    .badge-warning {background:rgba(230,126,34,0.2);color:#E67E22}
+    .badge-danger {background:rgba(127,140,141,0.2);color:#7F8C8D}
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 16px;
+      border:none;
+      border-radius:8px;
+      font-size:0.85rem;
+      font-weight:600;
+      cursor:pointer;
+      transition:all 0.3s;
+    }
+    .btn-success {background:#27AE60;color:#fff}
+    .btn-danger {background:#7F8C8D;color:#fff}
+    .btn-success:hover {background:#229954;transform:translateY(-2px)}
+    .btn-danger:hover {background:#6c7a7b;transform:translateY(-2px)}
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="topbar-left">
+      <div class="logo">
+        <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo Logo">
+      </div>
+      <h1>Painel Encarregado</h1>
+    </div>
+    <div class="user-info">
+      <span id="nomeEnc" style="color:#9ca3af"></span>
+      <a href="alterar-senha.html" class="btn-logout" style="background:rgba(0,102,204,0.1);border-color:rgba(0,102,204,0.3);color:#0066CC">🔑 Senha</a>
+      <button class="btn-logout" onclick="logout()">🚪 Sair</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>🏢</span> Meu Departamento
+        </div>
+        <div class="stat-value" id="statDept">--</div>
+        <div class="stat-sub">Nome do departamento</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>👥</span> Colaboradores
+        </div>
+        <div class="stat-value" id="statColab">0</div>
+        <div class="stat-sub">Na minha equipe</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>📅</span> Próximo Sábado
+        </div>
+        <div class="stat-value" id="statProxSab">--</div>
+        <div class="stat-sub">Data da próxima semana</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>✅</span> Confirmados
+        </div>
+        <div class="stat-value" id="statConf">0</div>
+        <div class="stat-sub">Para o próximo sábado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">
+          <span>⏳</span> Pendentes
+        </div>
+        <div class="stat-value" id="statPend">0</div>
+        <div class="stat-sub">Aguardando confirmação</div>
+      </div>
+    </div>
+
+    <!-- GESTÃO DE PRESENÇA -->
+    <div class="card">
+      <h2>📋 Gestão de Presença - Minha Equipe</h2>
+
+      <div class="info-box">
+        <strong>ℹ️ Como funciona:</strong> Selecione a semana e marque a presença dos colaboradores do seu departamento que não possuem celular.
+      </div>
+
+      <div class="filtro">
+        <label style="color:#9ca3af;font-weight:600">Filtrar por Semana:</label>
+        <select id="filtroSemana" onchange="atualizarLista()">
+          <option value="">Carregando...</option>
+        </select>
+      </div>
+
+      <div id="listaColaboradores"></div>
+    </div>
+  </div>
+
+  <script>
+    const sessao = JSON.parse(localStorage.getItem('sessao') || '{}');
+    if (!sessao.tipo || sessao.tipo !== 'encarregado') {
+      alert('❌ Acesso negado');
+      window.location.href = 'index.html';
+    }
+
+    const encAtual = sessao.usuario;
+    document.getElementById('nomeEnc').textContent = encAtual.nome;
+
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+    };
+
+    function logout() {
+      localStorage.removeItem('sessao');
+      window.location.href = 'index.html';
+    }
+
+    function carregarSemanas() {
+      const semanas = DB.get('semanas').sort((a,b) => a.inicio.localeCompare(b.inicio));
+      const sel = document.getElementById('filtroSemana');
+
+      if (!semanas.length) {
+        sel.innerHTML = '<option value="">Nenhuma semana cadastrada</option>';
+        return;
+      }
+
+      const hoje = new Date().toISOString().slice(0,10);
+      let semanaAtual = semanas.find(s => s.inicio <= hoje && s.fim >= hoje);
+
+      if (!semanaAtual && semanas.length) {
+        semanaAtual = semanas.filter(s => s.inicio >= hoje)[0] || semanas[semanas.length - 1];
+      }
+
+      sel.innerHTML = semanas.map(s => {
+        const selected = semanaAtual && s.id === semanaAtual.id ? 'selected' : '';
+        const dataSab = new Date(s.sabado+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit', year:'numeric'});
+        return `<option value="${s.id}" ${selected}>Sábado ${dataSab} (${s.rotulo})</option>`;
+      }).join('');
+
+      atualizarDash();
+      atualizarLista();
+    }
+
+    function atualizarDash() {
+      const usuarios = DB.get('usuarios');
+      const semanas = DB.get('semanas');
+      const conf = DB.get('confirmacoes');
+
+      const meusDept = usuarios.filter(u => u.deptId === encAtual.deptId && u.perfil === 'colaborador');
+
+      document.getElementById('statDept').textContent = encAtual.deptNome || '--';
+      document.getElementById('statColab').textContent = meusDept.length;
+
+      const hoje = new Date().toISOString().slice(0,10);
+      const proximas = semanas.filter(s => s.sabado >= hoje).sort((a,b) => a.sabado.localeCompare(b.sabado));
+
+      if (proximas.length) {
+        const prox = proximas[0];
+        const dataBR = new Date(prox.sabado+'T00:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+        document.getElementById('statProxSab').textContent = dataBR;
+
+        const confirmados = conf.filter(c => {
+          return c.semanaId === prox.id && 
+                 c.status === 'confirmado' && 
+                 meusDept.find(m => m.id === c.colabId);
+        }).length;
+
+        const recusados = conf.filter(c => {
+          return c.semanaId === prox.id && 
+                 c.status === 'recusado' && 
+                 meusDept.find(m => m.id === c.colabId);
+        }).length;
+
+        const pendentes = meusDept.length - confirmados - recusados;
+
+        document.getElementById('statConf').textContent = confirmados;
+        document.getElementById('statPend').textContent = pendentes;
+      } else {
+        document.getElementById('statProxSab').textContent = '--';
+        document.getElementById('statConf').textContent = '0';
+        document.getElementById('statPend').textContent = '0';
+      }
+    }
+
+    function atualizarLista() {
+      const semanaId = parseInt(document.getElementById('filtroSemana').value);
+      if (!semanaId) {
+        document.getElementById('listaColaboradores').innerHTML = '<p style="color:#9ca3af;">Selecione uma semana para gerenciar.</p>';
+        return;
+      }
+
+      const usuarios = DB.get('usuarios');
+      const conf = DB.get('confirmacoes');
+      const semanas = DB.get('semanas');
+
+      const semana = semanas.find(s => s.id === semanaId);
+      const meusDept = usuarios.filter(u => u.deptId === encAtual.deptId && u.perfil === 'colaborador');
+
+      const el = document.getElementById('listaColaboradores');
+
+      if (!meusDept.length) {
+        el.innerHTML = '<p style="color:#9ca3af;">Nenhum colaborador no seu departamento.</p>';
+        return;
+      }
+
+      el.innerHTML = `<table>
+        <thead>
+          <tr>
+            <th>Matrícula</th>
+            <th>Nome</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${meusDept.map(c => {
+            const confirmacao = conf.find(cf => cf.semanaId === semanaId && cf.colabId === c.id);
+            const status = confirmacao ? confirmacao.status : 'pendente';
+            const badgeClass = 
+              status === 'confirmado' ? 'badge-success' : 
+              status === 'recusado' ? 'badge-danger' : 'badge-warning';
+            const statusText = 
+              status === 'confirmado' ? '✅ Confirmado' : 
+              status === 'recusado' ? '❌ Recusado' : '⏳ Pendente';
+
+            return `<tr>
+              <td>${c.matricula}</td>
+              <td>${c.nome}</td>
+              <td><span class="badge ${badgeClass}">${statusText}</span></td>
+              <td>
+                <button class="btn btn-success" onclick="marcarPresenca(${c.id}, ${semanaId}, 'confirmado')">✅ Presente</button>
+                <button class="btn btn-danger" onclick="marcarPresenca(${c.id}, ${semanaId}, 'recusado')">❌ Ausente</button>
+              </td>
+            </tr>`;
+          }).join('')}
+        </tbody>
+      </table>`;
+
+      atualizarDash();
+    }
+
+    function marcarPresenca(colabId, semanaId, status) {
+      let conf = DB.get('confirmacoes');
+      conf = conf.filter(c => !(c.semanaId === semanaId && c.colabId === colabId));
+      conf.push({
+        id: Date.now(),
+        semanaId,
+        colabId,
+        status,
+        data: new Date().toISOString(),
+        responsavel: encAtual.matricula
+      });
+      DB.set('confirmacoes', conf);
+
+      alert(`✅ Presença ${status === 'confirmado' ? 'confirmada' : 'marcada como ausente'}!`);
+      atualizarLista();
+    }
+
+    window.onload = carregarSemanas;
+  </script>
+</body>
+</html>

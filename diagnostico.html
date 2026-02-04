@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnóstico - Calendário de Disponibilidade</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    * {margin:0;padding:0;box-sizing:border-box}
+    body {
+      font-family:'Inter',sans-serif;
+      background:#0a0a0a;
+      color:#e5e7eb;
+      min-height:100vh;
+      padding:20px;
+    }
+    .container {max-width:900px;margin:0 auto}
+    .header {
+      background:rgba(15,23,42,0.95);
+      border-radius:20px;
+      padding:24px;
+      border:1px solid rgba(148,163,184,0.3);
+      margin-bottom:24px;
+      display:flex;
+      align-items:center;
+      gap:20px;
+    }
+    .logo-container {
+      width:120px;
+      height:50px;
+      background:#fff;
+      border-radius:12px;
+      padding:8px 15px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .logo-container img {
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .header-text {flex:1}
+    .header h1 {
+      font-size:1.5rem;
+      font-weight:700;
+      color:#e5e7eb;
+      margin-bottom:4px;
+    }
+    .header p {font-size:.9rem;color:#9ca3af}
+    .header a {
+      color:#0066CC;
+      text-decoration:none;
+      font-size:.85rem;
+    }
+    .card {
+      background:rgba(15,23,42,0.96);
+      border:1px solid rgba(148,163,184,0.2);
+      border-radius:16px;
+      padding:24px;
+      margin-bottom:24px;
+    }
+    .card h2 {
+      font-size:1.3rem;
+      color:#e5e7eb;
+      margin-bottom:12px;
+      padding-bottom:12px;
+      border-bottom:1px solid rgba(148,163,184,0.1);
+    }
+    .info-box {
+      background:rgba(0,102,204,0.1);
+      border-left:3px solid #0066CC;
+      padding:14px 18px;
+      border-radius:10px;
+      margin-bottom:24px;
+      color:#7dd3fc;
+      font-size:0.9rem;
+    }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 20px;
+      border:none;
+      border-radius:10px;
+      font-size:0.9rem;
+      font-weight:600;
+      cursor:pointer;
+      margin-right:10px;
+      margin-bottom:10px;
+      transition:all 0.3s;
+    }
+    .btn-primary {
+      background:linear-gradient(135deg,#003B7A,#0066CC);
+      color:#fff;
+    }
+    .btn-primary:hover {
+      opacity:0.9;
+      transform:translateY(-2px);
+    }
+    .btn-danger {
+      background:#E67E22;
+      color:#fff;
+    }
+    .btn-danger:hover {
+      background:#d35400;
+      transform:translateY(-2px);
+    }
+    pre {
+      background:#1e293b;
+      padding:15px;
+      border-radius:8px;
+      overflow-x:auto;
+      font-size:0.85rem;
+      color:#c7d2fe;
+      border:1px solid rgba(148,163,184,0.2);
+    }
+    table {width:100%;border-collapse:collapse;margin-top:15px}
+    th,td {padding:10px 12px;text-align:left;border-bottom:1px solid rgba(148,163,184,0.1)}
+    th {
+      background:rgba(15,23,42,0.5);
+      font-weight:600;
+      font-size:0.8rem;
+      color:#9ca3af;
+      text-transform:uppercase;
+    }
+    .status-ok {color:#27AE60;font-weight:600;}
+    .status-warn {color:#E67E22;font-weight:600;}
+    .status-error {color:#E67E22;font-weight:600;}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-container">
+        <img src="https://www.elo-ci.com.br/wp-content/uploads/2023/08/Logo_ELO_CI.png" alt="Elo Logo">
+      </div>
+      <div class="header-text">
+        <h1>Diagnóstico do Sistema</h1>
+        <p>Verifique o status e os dados do sistema</p>
+      </div>
+      <a href="index.html">← Voltar ao login</a>
+    </div>
+
+    <div class="card">
+      <h2>Status do LocalStorage</h2>
+      <div class="info-box">
+        <strong>ℹ️ Informações:</strong> O sistema utiliza o LocalStorage do seu navegador para armazenar todos os dados. Limpar o LocalStorage apagará todos os dados do sistema.
+      </div>
+      <button class="btn btn-danger" onclick="limparLocalStorage()">🗑️ Limpar LocalStorage</button>
+      <button class="btn btn-primary" onclick="exportarDados()">⬇️ Exportar Dados</button>
+      <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importarDados(event)">
+      <button class="btn btn-primary" onclick="document.getElementById('importFile').click()">⬆️ Importar Dados</button>
+    </div>
+
+    <div class="card">
+      <h2>Dados do Sistema</h2>
+      <div id="dadosSistema"></div>
+    </div>
+  </div>
+
+  <script>
+    const DB = {
+      get: k => JSON.parse(localStorage.getItem(k) || '[]'),
+      set: (k,v) => localStorage.setItem(k, JSON.stringify(v))
+    };
+
+    function carregarDiagnostico() {
+      const dadosDiv = document.getElementById('dadosSistema');
+      let html = '';
+
+      const chaves = ['usuarios', 'departamentos', 'semanas', 'confirmacoes', 'cfg'];
+
+      chaves.forEach(chave => {
+        const dados = localStorage.getItem(chave);
+        const parsed = dados ? JSON.parse(dados) : [];
+        const statusClass = parsed.length > 0 ? 'status-ok' : 'status-warn';
+        const statusText = parsed.length > 0 ? 'OK' : 'Vazio';
+
+        html += `
+          <h3>${chave.charAt(0).toUpperCase() + chave.slice(1)}: <span class="${statusClass}">${statusText}</span> (${parsed.length} registros)</h3>
+          <pre>${JSON.stringify(parsed, null, 2)}</pre>
+        `;
+      });
+
+      dadosDiv.innerHTML = html;
+    }
+
+    function limparLocalStorage() {
+      if (confirm('Tem certeza que deseja limpar TODOS os dados do sistema? Esta ação é irreversível!')) {
+        localStorage.clear();
+        alert('✅ LocalStorage limpo com sucesso!');
+        window.location.reload();
+      }
+    }
+
+    function exportarDados() {
+      const allData = {};
+      const chaves = ['usuarios', 'departamentos', 'semanas', 'confirmacoes', 'cfg'];
+      chaves.forEach(chave => {
+        allData[chave] = JSON.parse(localStorage.getItem(chave) || '[]');
+      });
+
+      const dataStr = JSON.stringify(allData, null, 2);
+      const blob = new Blob([dataStr], {type: 'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `backup_calendario_disponibilidade_${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      alert('✅ Dados exportados com sucesso!');
+    }
+
+    function importarDados(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const importedData = JSON.parse(e.target.result);
+          if (confirm('Tem certeza que deseja importar estes dados? Isso substituirá os dados atuais do sistema!')) {
+            const chaves = ['usuarios', 'departamentos', 'semanas', 'confirmacoes', 'cfg'];
+            chaves.forEach(chave => {
+              if (importedData[chave]) {
+                DB.set(chave, importedData[chave]);
+              }
+            });
+            alert('✅ Dados importados com sucesso! O sistema será recarregado.');
+            window.location.reload();
+          }
+        } catch (error) {
+          alert('❌ Erro ao importar dados: arquivo JSON inválido.');
+          console.error(error);
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    window.onload = carregarDiagnostico;
+  </script>
+</body>
+</html>
